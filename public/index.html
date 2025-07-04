@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Phish Trivia</title>
+  <style>
+    body { font-family: sans-serif; padding: 1em; text-align: center; }
+    button, input { font-size: 1.2em; margin: 0.5em; padding: 0.5em; }
+    #question-container { display: none; }
+    .choice { display: block; margin: 0.3em 0; }
+  </style>
+</head>
+<body>
+  <h1>🎶 Phish Trivia 🎶</h1>
+  <div id="start">
+    <button id="createBtn">Create Game</button>
+    <input type="text" id="joinCode" placeholder="Game Code">
+    <input type="text" id="playerName" placeholder="Your Name">
+    <button id="joinBtn">Join Game</button>
+  </div>
+  <div id="lobby" style="display:none">
+    <h2>Lobby</h2>
+    <p>Players:</p>
+    <ul id="players"></ul>
+    <button id="startGameBtn">Start Game</button>
+  </div>
+  <div id="question-container">
+    <h2 id="question"></h2>
+    <div id="choices"></div>
+    <div id="result"></div>
+    <button id="nextBtn" style="display:none">Next Question</button>
+  </div>
+  <div id="gameOver" style="display:none">
+    <h2>🏁 Game Over 🏁</h2>
+    <ol id="results"></ol>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let gameCode = "";
+    let isHost = false;
+
+    document.getElementById("createBtn").onclick = () => {
+      socket.emit("createGame");
+    };
+
+    document.getElementById("joinBtn").onclick = () => {
+      gameCode = document.getElementById("joinCode").value.toUpperCase();
+      const playerName = document.getElementById("playerName").value;
+      socket.emit("joinGame", { gameCode, playerName });
+    };
+
+    socket.on("gameCreated", (data) => {
+      gameCode = data.gameCode;
+      isHost = true;
+      document.getElementById("start").style.display = "none";
+      document.getElementById("lobby").style.display = "block";
+    });
+
+    socket.on("playerJoined", ({ players }) => {
+      const list = document.getElementById("players");
+      list.innerHTML = players.map(p => `<li>${p}</li>`).join("");
+    });
+
+    document.getElementById("startGameBtn").onclick = () => {
+      socket.emit("startGame", { gameCode });
+    };
+
+    socket.on("newQuestion", ({ question, choices }) => {
+      document.getElementById("lobby").style.display = "none";
+      document.getElementById("question-container").style.display = "block";
+      document.getElementById("question").textContent = question;
+      const choicesDiv = document.getElementById("choices");
+      choicesDiv.innerHTML = "";
+      choices.forEach(c => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.textContent = c;
+        btn.onclick = () => {
+          socket.emit("submitAnswer", { gameCode, answer: c });
+        };
+        choicesDiv.appendChild(btn);
+      });
+    });
+
+    socket.on("answerResult", ({ correct, fact }) => {
+      document.getElementById("result").textContent = correct ? "✅ Correct!" : "❌ Wrong.";
+      const factElem = document.createElement("p");
+      factElem.textContent = `Fact: ${fact}`;
+      document.getElementById("result").appendChild(factElem);
+      if (isHost) document.getElementById("nextBtn").style.display = "block";
+    });
+
+    document.getElementById("nextBtn").onclick = () => {
+      socket.emit("nextQuestion", { gameCode });
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("nextBtn").style.display = "none";
+    };
+
+    socket.on("gameOver", (results) => {
+      document.getElementById("question-container").style.display = "none";
+      document.getElementById("gameOver").style.display = "block";
+      const list = document.getElementById("results");
+      list.innerHTML = results.map(r => `<li>${r.name}: ${r.score}</li>`).join("");
+    });
+  </script>
+</body>
+</html>

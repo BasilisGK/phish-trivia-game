@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "question": "Where did the members of Phish first meet and form the band?",
+    "choices": ["University of Vermont", "Berklee College of Music", "Oberlin College", "Yale University"],
+    "correct": "University of Vermont",
+    "fact": "Phish formed at the University of Vermont in 1983."
+  },
+  {
+    "id": 2,
+    "question": "What is the name of Phish's drummer?",
+    "choices": ["Mike Gordon", "Trey Anastasio", "Page McConnell", "Jon Fishman"],
+    "correct": "Jon Fishman",
+    "fact": "Jon Fishman is known for playing in a muumuu and his vacuum solos on stage."
+  }
+]
